@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Study Buddy</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("theme")||"dark"}catch(e){}</script>
+<style>
+  :root { --bg:#f6f1e7; --ink:#1c1a17; --card:#fffdf8; --accent:#8f6d1f; --gold:#8f6d1f; --on-accent:#fff; --bad:#b4472f; --on-bad:#fff; --line:#ddd2bb; --tint:#f1e8d2; --warn:#f8e9e2; --soft:#faf5ea; --cell:#e8dfca; --btnbg:#1c1a17; --btntxt:#f6f1e7; --h1:#eadfba; --h2:#d9c27f; --h3:#bf9c43; --h4:#8f6d1f;
+    --serif:'Cormorant Garamond','Didot','Bodoni 72','Baskerville',Georgia,serif; }
+  html[data-theme="dark"] { --bg:#0b1220; --ink:#f3e9d2; --card:#111a2e; --accent:#c9a24b; --gold:#c9a24b; --on-accent:#0b1220; --bad:#e0775c; --on-bad:#0b1220; --line:#2a3350; --tint:#18213a; --warn:#2c1f24; --soft:#0f182a; --cell:#1a2440; --btnbg:#c9a24b; --btntxt:#0b1220; --h1:#3a3320; --h2:#6b5a2a; --h3:#9c8138; --h4:#c9a24b; color-scheme:dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:'Jost',system-ui,sans-serif; letter-spacing:.01em; background:var(--bg); color:var(--ink); line-height:1.5; }
+  main { max-width: 820px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1, h2, h3, .score, .card b, .clock { font-family:var(--serif); }
+  h1 { font-size:1.7rem; font-weight:600; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); margin:0 0 4px; }
+  h2 { font-size:1.55rem; font-weight:600; margin:0 0 12px; letter-spacing:.01em; }
+  h3 { font-weight:600; font-size:1.3rem; }
+  .rule { width:56px; height:1px; background:var(--gold); margin:14px auto; }
+  button, .opt, input, select, textarea { transition:background .25s, border-color .25s, color .25s, filter .25s; }
+  button:hover:not(:disabled) { filter:brightness(1.08); }
+  section { background:var(--card); border:1px solid var(--line); border-top:1px solid color-mix(in srgb, var(--gold) 60%, var(--line)); border-radius:4px; padding:20px 18px; margin-top:16px; }
+  textarea, input, select { width:100%; padding:10px; border:1px solid var(--line); border-radius:2px; font:inherit; margin-bottom:10px; background:var(--card); color:var(--ink); }
+  textarea { min-height: 110px; }
+  button { background:var(--btnbg); color:var(--btntxt); border:0; padding:11px 18px; border-radius:2px; font:inherit; font-weight:500; letter-spacing:.04em; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:default; }
+  button.accent { background:var(--accent); color:var(--on-accent); }
+  button.ghost { background:transparent; color:var(--ink); border:1px solid color-mix(in srgb, var(--gold) 55%, var(--line)); padding:7px 13px; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start; }
+  .row > * { flex:1 1 130px; min-width:0; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  @media (max-width:520px) { h1 { font-size:1.7rem; } }
+  .top button { flex:none; }
+  .day { display:flex; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); }
+  .day input { width:auto; margin:0; }
+  .day.done span { text-decoration: line-through; opacity:.5; }
+  .q { padding:12px 0; border-bottom:1px solid var(--line); }
+  .opt { display:block; width:100%; text-align:left; background:var(--bg); color:var(--ink); margin:6px 0; font-weight:400; }
+  .opt.right { background:var(--accent); color:var(--on-accent); }
+  .opt.wrong { background:var(--bad); color:var(--on-bad); }
+  .opt.sel { background:var(--btnbg); color:var(--btntxt); }
+  .why { background:var(--bad); margin-top:6px; }
+  .ai { background:var(--warn); border-left:4px solid var(--bad); padding:10px 12px; border-radius:6px; margin-top:8px; }
+  .note { font-size:.9rem; opacity:.8; }
+  .badge { display:inline-block; background:var(--accent); color:var(--on-accent); padding:2px 10px; border-radius:99px; font-size:.85rem; }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .tabs button { flex:1; background:var(--card); color:var(--ink); border:1px solid var(--line); }
+  .tabs button.on { background:var(--btnbg); color:var(--btntxt); border-color:var(--btnbg); }
+  #nav { margin-top:16px; margin-bottom:0; }
+  .err { color:var(--bad); min-height:1.4em; }
+  .msg { padding:10px 12px; border-radius:8px; margin:8px 0; white-space:pre-wrap; }
+  .msg.you { background:var(--bg); }
+  .msg.ai { background:var(--tint); border-left:4px solid var(--accent); }
+  details { margin-top:6px; font-size:.9rem; }
+  #chat { max-height: 420px; overflow-y:auto; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+  .card { background:var(--soft); border:1px solid var(--line); border-radius:2px; padding:12px 14px; }
+  .card b { display:block; font-size:2rem; font-weight:600; line-height:1.15; color:var(--gold); }
+  .clock { flex:none; font-size:1.6rem; font-weight:800; font-variant-numeric:tabular-nums; text-align:right; }
+  .clock.low { color:var(--bad); }
+  .score { font-size:2.6rem; font-weight:800; line-height:1.1; }
+  .bar { height:10px; background:var(--bg); border-radius:99px; overflow:hidden; margin:4px 0 10px; }
+  .bar > i { display:block; height:100%; background:var(--accent); }
+  .rev { padding:10px 0; border-bottom:1px solid var(--line); }
+  .rev.bad strong:first-child { color:var(--bad); }
+  .heat { display:grid; grid-template-rows:repeat(7,14px); grid-auto-flow:column; grid-auto-columns:14px; gap:3px; overflow-x:auto; padding-bottom:6px; }
+  .cell { width:14px; height:14px; border-radius:3px; background:var(--cell); }
+  .cell.blank { background:transparent; }
+  .l1 { background:var(--h1); } .l2 { background:var(--h2); } .l3 { background:var(--h3); } .l4 { background:var(--h4); }
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  .st { display:inline-block; padding:1px 10px; border-radius:99px; color:#fff; font-size:.8rem; }
+  .st.help { color:var(--on-bad); } .st.ok { color:var(--on-accent); }
+  .st.help { background:var(--bad); } .st.ok { background:var(--accent); } .st.idle { background:#8a94a3; } .st.none { background:#b8c0cc; }
+  .clsrow { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .clsrow > span:first-child { flex:1 1 220px; min-width:0; }
+  .clsrow button { flex:none; }
+  .hist { display:block; width:100%; text-align:left; background:var(--bg); color:var(--ink); font-weight:400; margin:6px 0; }
+  .badges { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; margin-top:10px; }
+  .badge-card { background:var(--bg); border-radius:8px; padding:8px 10px; opacity:.45; border:1px solid transparent; }
+  .badge-card.on { opacity:1; border-color:var(--accent); background:var(--tint); }
+  .badge-card b { display:block; }
+  tr.me td { background:var(--tint); font-weight:600; }
+  .insight { background:var(--tint); border-left:4px solid var(--accent); border-radius:6px; padding:12px 14px; margin-top:10px; }
+  .insight ul { margin:6px 0; padding-left:20px; } .insight li { margin-bottom:8px; }
+  .dq { border:1px solid var(--line); border-radius:8px; padding:12px; margin:10px 0; background:var(--soft); }
+  .dq .opt-row { display:flex; gap:8px; align-items:center; } .dq .opt-row input[type=radio] { width:auto; margin:0 0 10px; flex:none; } .dq .opt-row input[type=text] { flex:1; }
+  .dq textarea { min-height:60px; }
+  .hero { text-align:center; padding:36px 12px 28px; }
+  .hero h2 { font-size:2.8rem; line-height:1.05; font-weight:500; margin:0 0 6px; }
+  .hero h2 em { color:var(--gold); }
+  .hero p { max-width:560px; margin:0 auto 18px; font-size:1.05rem; }
+  .hero .row { justify-content:center; max-width:360px; margin:0 auto; }
+  .grid3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  .tile { background:var(--bg); border-radius:10px; padding:14px; }
+  .tile h3 { margin:0 0 6px; font-size:1.05rem; } .tile ul { margin:6px 0 0; padding-left:18px; font-size:.93rem; }
+  .step { display:flex; gap:12px; align-items:flex-start; padding:8px 0; }
+  .step b { flex:none; width:30px; height:30px; border-radius:50%; background:var(--accent); color:var(--on-accent); display:grid; place-items:center; }
+  .backlink { background:none; border:0; color:var(--ink); text-decoration:underline; padding:0; font-weight:400; margin-bottom:10px; }
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  @media (max-width:640px) { .split { grid-template-columns:1fr; } }
+  .mock { background:var(--bg); border:1px dashed var(--line); border-radius:10px; padding:14px; }
+  .mockhead { font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; opacity:.7; margin-bottom:8px; }
+  .pills { display:flex; gap:8px; margin-bottom:14px; } .pills button { flex:1; background:var(--card); color:var(--ink); border:1px solid var(--line); }
+  .pills button[aria-selected="true"] { background:var(--btnbg); color:var(--btntxt); border-color:var(--btnbg); }
+  .flow { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+  .flow .tile { position:relative; } .flow .tile .st { margin-bottom:8px; }
+  .joinbox { display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:center; }
+  .joinbox input { max-width:200px; margin:0; text-align:center; letter-spacing:.2em; font-weight:700; text-transform:uppercase; }
+  .weekstrip { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:12px; }
+  .wd { padding:8px 2px 6px; text-align:center; background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:2px; font-size:.78rem; line-height:1.25; font-weight:400; letter-spacing:0; }
+  .wd b { display:block; font-family:var(--serif); font-size:1.3rem; font-weight:600; line-height:1.2; }
+  .wd.today b { color:var(--gold); }
+  .wd.sel { background:var(--btnbg); color:var(--btntxt); border-color:var(--btnbg); } .wd.sel b { color:var(--btntxt); }
+  .wd .mini { display:block; height:4px; margin:5px 6px 0; background:var(--cell); border-radius:2px; overflow:hidden; } .wd .mini i { display:block; height:100%; background:var(--accent); }
+  .wd.sel .mini { background:rgba(128,128,128,.35); } .wd.sel .mini i { background:var(--btntxt); }
+  .task { display:flex; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); }
+  .task input[type=checkbox] { width:22px; height:22px; margin:0; flex:none; accent-color:var(--gold); }
+  .task .tmain { flex:1; min-width:0; } .task .ttitle { display:block; word-break:break-word; }
+  .task.done .ttitle { text-decoration:line-through; opacity:.5; }
+  .task button { flex:none; padding:6px 11px; }
+  .lbl { display:block; font-size:.85rem; opacity:.9; } .lbl input, .lbl select { margin-top:4px; }
+  .chk { display:flex; gap:10px; align-items:center; margin:6px 0 10px; } .chk input { width:auto; margin:0; accent-color:var(--gold); }
+  .tag { font-size:.7rem; border:1px solid var(--gold); color:var(--gold); border-radius:99px; padding:0 7px; margin-left:8px; white-space:nowrap; font-weight:400; vertical-align:middle; }
+  .aiday { margin:14px 0 2px; font-family:var(--serif); font-size:1.1rem; color:var(--gold); }
+  .aitask { display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px solid var(--line); } .aitask input { width:22px; height:22px; margin:0; flex:none; accent-color:var(--gold); } .aitask.off span { opacity:.45; text-decoration:line-through; }
+  @media print { html, html[data-theme="dark"] { --bg:#fff; --ink:#1c1a17; --card:#fff; --line:#ddd2bb; --tint:#f1e8d2; --soft:#fff; --cell:#e8dfca; --warn:#fff; --gold:#8f6d1f; --accent:#8f6d1f; }
+  .no-print, #nav, .top, button { display:none !important; } body { background:#fff; } section { border:0; padding:6px 0; break-inside:avoid; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div>
+      <h1>AI Study Buddy</h1>
+      <p class="note" id="sub">Adaptive study platform for students and teachers.</p>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button id="themeBtn" class="ghost" aria-label="Toggle dark mode">Dark mode</button>
+      <button id="pwBtn" class="ghost" hidden>Change password</button>
+      <button id="logoutBtn" class="ghost" hidden>Log out</button>
+    </div>
+  </div>
+
+  <!-- Landing page (logged-out visitors) -->
+  <div id="landing">
+    <section class="hero">
+      <h2>Study smarter.<br><em>Teach with insight.</em></h2>
+      <div class="rule"></div>
+      <p>An adaptive study platform that quizzes you on what you get wrong, lets you chat with your own notes, and shows teachers exactly what to reteach.</p>
+      <div class="row">
+        <button id="heroStart" class="accent">Get started free</button>
+        <button id="heroLogin" class="ghost">Log in</button>
+      </div>
+    </section>
+    <section style="text-align:center">
+      <h2>Have a class code?</h2>
+      <p class="note" style="margin-top:0">Your teacher gave you a 6-character code. Enter it and we will add you to the class when you sign up.</p>
+      <div class="joinbox"><input id="landCode" maxlength="6" placeholder="K7PX2M" aria-label="Class code" autocomplete="off"><button id="landJoin" class="accent">Join my class</button></div>
+      <p class="err" id="landErr"></p>
+    </section>
+
+    <section>
+      <h2>See it your way</h2>
+      <div class="pills" role="tablist" aria-label="Choose your role">
+        <button role="tab" id="rtStudent" aria-selected="true">Student</button>
+        <button role="tab" id="rtTeacher" aria-selected="false">Teacher</button>
+        <button role="tab" id="rtHod" aria-selected="false">Head of dept.</button>
+      </div>
+      <div class="split" role="tabpanel">
+        <div id="roleText"></div>
+        <div class="mock" id="roleMock"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>AI helps. You stay in charge.</h2>
+      <p class="note" style="margin-top:0">Assignments written by AI are never sent to students automatically.</p>
+      <div class="flow">
+        <div class="tile"><span class="st help">Draft</span><h3>1. AI drafts</h3><p class="note" style="margin:0">Pick a topic and a due date. The AI writes the questions, including short-answer ones.</p></div>
+        <div class="tile"><span class="st idle">Reviewed</span><h3>2. Teacher edits</h3><p class="note" style="margin:0">Fix wording, change the correct answer, delete weak questions or add your own.</p></div>
+        <div class="tile"><span class="st ok">Published</span><h3>3. Students see it</h3><p class="note" style="margin:0">Only after you publish. Students never see drafts or answer keys.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>How it works</h2>
+      <div class="step"><b>1</b><span><strong>Create your account.</strong><br><span class="note">Students sign up directly. Teachers and heads of department use an invite code from their school.</span></span></div>
+      <div class="step"><b>2</b><span><strong>Study or set work.</strong><br><span class="note">Students practise and take exams. Teachers create a class and share its 6-character code.</span></span></div>
+      <div class="step"><b>3</b><span><strong>See what to do next.</strong><br><span class="note">Weak topics, due reviews and class insights show up on their own.</span></span></div>
+    </section>
+    <section>
+      <h2>Your data</h2>
+      <p class="note" style="margin:0">Passwords are hashed, access is role-based, and teachers only see classes they own. AI features send only the text needed for the task. Teacher insights never include student names. <a href="/api-docs">API documentation</a></p>
+    </section>
+    <p style="text-align:center"><button id="footStart" class="accent">Create your account</button></p>
+  </div>
+
+  <!-- Login / Register -->
+  <section id="auth" hidden>
+    <button id="backHome" class="backlink">&larr; Back to home</button>
+    <p class="note" id="joinHint" hidden></p>
+    <div class="tabs">
+      <button id="tabLogin" class="on">Log in</button>
+      <button id="tabReg">Register</button>
+    </div>
+    <input id="aName" placeholder="Your name" autocomplete="name" hidden>
+    <select id="aRole" hidden>
+      <option value="student">I am a student</option>
+      <option value="teacher">I am a teacher</option>
+      <option value="hod">I am a head of department</option>
+    </select>
+    <input id="aCode" placeholder="Invite code (teachers: if your school gave you one; head of department: required)" hidden>
+    <input id="aEmail" type="email" placeholder="Email" autocomplete="email">
+    <input id="aPass" type="password" placeholder="Password (8+ characters, letters and a number)" autocomplete="current-password">
+    <p class="err" id="aErr"></p>
+    <button id="aGo">Log in</button>
+  </section>
+
+  <section id="changePw" hidden>
+    <h2>Change password</h2>
+    <p class="note" id="pwForced" hidden>Your teacher reset your password. Choose a new one to continue.</p>
+    <input id="pwOld" type="password" placeholder="Current (or temporary) password" autocomplete="current-password">
+    <input id="pwNew" type="password" placeholder="New password (8+ characters, letters and a number)" autocomplete="new-password">
+    <p class="err" id="pwMsg"></p>
+    <div class="row"><button id="pwSave" class="accent">Save password</button><button id="pwCancel" class="ghost">Cancel</button></div>
+  </section>
+
+  <div id="app" hidden>
+    <nav class="tabs" id="nav"></nav>
+
+    <!-- ============ STUDY ============ -->
+    <div id="pStudy">
+      <section>
+        <h2>1. Build a study plan</h2>
+        <input id="subject" placeholder="Subject (e.g. Operating Systems)">
+        <textarea id="syllabus" placeholder="Paste your syllabus here"></textarea>
+        <button id="planBtn">Generate plan</button>
+        <div id="plan"></div>
+      </section>
+
+      <section>
+        <h2>2. Take a quiz</h2>
+        <div class="row">
+          <input id="topic" placeholder="Topic (e.g. Deadlocks)">
+          <button id="quizBtn">Quiz me</button>
+          <button id="adaptiveBtn" class="accent">Quiz my weak spots</button>
+        </div>
+        <div class="row">
+          <button id="reviewBtn" class="accent">Review due cards</button>
+        </div>
+        <p class="note" id="dueInfo"></p>
+        <div id="quiz"></div>
+      </section>
+
+      <section>
+        <h2>3. Chat with your notes</h2>
+        <input id="docTitle" placeholder="Title (e.g. OS Unit 3 notes)">
+        <textarea id="docText" placeholder="Paste notes here, or choose a PDF / TXT file below"></textarea>
+        <input id="docFile" type="file" accept=".pdf,.txt,.md,application/pdf,text/plain">
+        <button id="docUpload">Upload and index notes</button>
+        <p class="note" id="docMsg"></p>
+        <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+        <div class="row">
+          <select id="docSelect"></select>
+          <button id="docDel" class="ghost" hidden>Delete document</button>
+        </div>
+        <div class="row">
+          <input id="askInput" placeholder="Ask a question about your notes">
+          <button id="askBtn" class="accent">Ask</button>
+        </div>
+        <button id="notesQuizBtn">Quiz me from the selected document</button>
+        <div id="chat"></div>
+      </section>
+
+      <section>
+        <h2>4. Progress</h2>
+        <canvas id="chart" height="200"></canvas>
+        <p id="statsEmpty" class="note">Answer some questions to see your accuracy per topic.</p>
+      </section>
+    </div>
+
+    <!-- ============ EXAM ============ -->
+    <div id="pPlanner" hidden>
+      <section>
+        <h2>My planner</h2>
+        <p class="note">Plan your own days. Add tasks, tick them off, and carry unfinished ones forward.</p>
+        <div style="display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center">
+          <button id="plPrev" class="ghost" aria-label="Previous week">&larr;</button>
+          <strong id="plRange" style="text-align:center"></strong>
+          <button id="plNext" class="ghost" aria-label="Next week">&rarr;</button>
+          <button id="plToday" class="ghost">Today</button>
+        </div>
+        <div class="weekstrip" id="plWeek" aria-label="Days of the week"></div>
+        <p class="note" id="plWeekSum" style="margin-bottom:0"></p>
+      </section>
+      <section>
+        <h2 id="plDayTitle"></h2>
+        <div class="bar"><i id="plBar" style="width:0%"></i></div>
+        <p class="note" id="plDaySum"></p>
+        <button id="plCarry" class="ghost" hidden></button>
+        <div id="plList"></div>
+      </section>
+      <section>
+        <h2 id="plFormTitle">Add a task</h2>
+        <input id="plTitle" maxlength="120" placeholder="What will you study? (e.g. Revise stacks and queues)" aria-label="Task">
+        <input id="plTopic" maxlength="60" placeholder="Subject or topic (optional)" aria-label="Subject or topic">
+        <div class="row">
+          <input id="plDate" type="date" aria-label="Day">
+          <input id="plTime" type="time" aria-label="Start time (optional)">
+          <select id="plMin" aria-label="How long">
+            <option value="">Duration (optional)</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option>
+            <option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option><option value="180">3 hours</option>
+          </select>
+        </div>
+        <p class="err" id="plErr"></p>
+        <div class="row"><button id="plSave" class="accent">Add task</button><button id="plCancel" class="ghost" hidden>Cancel edit</button></div>
+      </section>
+      <section>
+        <h2>Plan my days with AI</h2>
+        <p class="note">Tell the AI what to cover. It drafts a plan, you choose what to keep, and only then does it go into your planner. You can still edit every task.</p>
+        <textarea id="aiGoal" maxlength="3000" placeholder="What do you need to cover? Topics or a pasted syllabus (e.g. DBMS unit 3: normalisation, transactions, SQL joins)" aria-label="What to cover"></textarea>
+        <div class="row">
+          <label class="lbl">Start day<input id="aiStart" type="date"></label>
+          <label class="lbl">Days<select id="aiDays"><option value="3">3 days</option><option value="5">5 days</option><option value="7" selected>7 days</option><option value="10">10 days</option><option value="14">14 days</option></select></label>
+          <label class="lbl">Study time a day<select id="aiMins"><option value="30">30 min</option><option value="60" selected>1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option><option value="180">3 hours</option></select></label>
+        </div>
+        <label class="lbl">Exam date (optional)<input id="aiExam" type="date"></label>
+        <label class="chk"><input type="checkbox" id="aiWeak" checked> Give extra time to my weak topics (from my quizzes)</label>
+        <p class="err" id="aiErr"></p>
+        <button id="aiGen" class="accent">Generate plan</button>
+        <div id="aiPreview" hidden>
+          <h3 style="margin-bottom:4px">Review your plan</h3>
+          <p class="note" id="aiNote" style="margin-top:0"></p>
+          <div id="aiList"></div>
+          <div class="row" style="margin-top:12px"><button id="aiAdd" class="accent">Add selected to my planner</button><button id="aiDiscard" class="ghost">Discard</button></div>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:20px 0 14px">
+        <p class="note" style="margin-top:0">Already made a 14-day plan in the Study tab? Put it in your planner, starting on the start day above.</p>
+        <button id="plImport" class="ghost">Add my 14-day plan to the planner</button>
+        <p class="note" id="plImportMsg"></p>
+      </section>
+    </div>
+
+    <div id="pExam" hidden>
+      <section id="examSetup">
+        <h2>Timed exam</h2>
+        <p class="note">A mock test with a countdown. It is graded on the server and you get an AI performance report.</p>
+        <input id="examTopic" placeholder="Topic (e.g. Process scheduling)">
+        <select id="examDoc"></select>
+        <div class="row">
+          <select id="examCount">
+            <option value="5">5 questions</option><option value="10" selected>10 questions</option><option value="15">15 questions</option>
+          </select>
+          <select id="examMin">
+            <option value="5">5 minutes</option><option value="10" selected>10 minutes</option><option value="20">20 minutes</option><option value="30">30 minutes</option>
+          </select>
+          <select id="examShort" aria-label="Short-answer questions">
+            <option value="0">No short-answer</option><option value="2">2 short-answer</option><option value="3">3 short-answer</option>
+          </select>
+        </div>
+        <p class="note">Short-answer questions are typed in your own words and marked by AI against a model answer.</p>
+        <button id="examStart" class="accent">Start exam</button>
+        <h2 style="margin-top:20px">Past exams</h2>
+        <div id="examHist"><p class="note">No exams yet.</p></div>
+      </section>
+
+      <section id="examRun" hidden>
+        <div class="row" style="align-items:center">
+          <strong id="examTitle"></strong>
+          <span id="examClock" class="clock">00:00</span>
+        </div>
+        <p class="note" id="examProg"></p>
+        <div id="examQs"></div>
+        <button id="examSubmit" class="accent">Submit exam</button>
+      </section>
+
+      <section id="examResult" hidden>
+        <div id="examOut"></div>
+        <button id="examNew">Back to exams</button>
+      </section>
+    </div>
+
+    <!-- ============ ANALYTICS ============ -->
+    <div id="pStats" hidden>
+      <section>
+        <h2 id="lvlTitle">Level</h2>
+        <div class="bar"><i id="lvlBar" style="width:0"></i></div>
+        <p class="note" id="lvlNote"></p>
+        <div class="badges" id="badges"></div>
+        <p class="note">XP: 10 per correct answer, 2 per wrong answer (daily limits apply), and 50 + your score for each exam.</p>
+      </section>
+      <section>
+        <h2>Your learning analytics</h2>
+        <div class="cards" id="statCards"></div>
+      </section>
+      <section>
+        <h2>Study activity (last 13 weeks)</h2>
+        <div class="heat" id="heat"></div>
+        <p class="note">Darker squares mean more answered questions that day.</p>
+      </section>
+      <section>
+        <h2>Accuracy trend (last 30 study days)</h2>
+        <canvas id="cTrend" height="180"></canvas>
+      </section>
+      <section>
+        <h2>Retention curve</h2>
+        <p class="note">How often you answer a question correctly depending on how long since you last saw it.</p>
+        <canvas id="cRet" height="180"></canvas>
+      </section>
+      <section>
+        <h2>Exam scores over time</h2>
+        <canvas id="cExam" height="180"></canvas>
+        <p class="note" id="examEmpty">Take an exam to see your score history.</p>
+      </section>
+    </div>
+
+    <!-- ============ STUDENT: MY CLASS ============ -->
+    <div id="pClass" hidden>
+      <section>
+        <h2>Join a class</h2>
+        <p class="note">Ask your teacher for the 6-character code. Once you join, your teacher can see your quiz accuracy and activity, and your name and XP appear on the class leaderboard.</p>
+        <div class="row">
+          <input id="joinCode" placeholder="Class code (e.g. K7PX2M)" maxlength="6" style="text-transform:uppercase">
+          <button id="joinBtn" class="accent">Join</button>
+        </div>
+        <p class="err" id="joinMsg"></p>
+        <div id="myClasses"></div>
+      </section>
+      <section>
+        <h2>Assignments</h2>
+        <div id="assignList"><p class="note">Join a class to see assignments.</p></div>
+      </section>
+    </div>
+
+    <!-- ============ HEAD OF DEPARTMENT ============ -->
+    <div id="pAdmin" hidden>
+      <section>
+        <h2>Department overview</h2>
+        <p class="note">Totals across every teacher and class. Individual student data is not shown here.</p>
+        <div class="cards" id="adCards"></div>
+        <div class="row no-print" style="margin-top:12px">
+          <button id="adCsvT" class="ghost">Teachers CSV</button>
+          <button id="adCsvC" class="ghost">Classes CSV</button>
+          <button id="adPrint" class="ghost">Print / save as PDF</button>
+        </div>
+      </section>
+      <section><h2>Teachers</h2><div class="scroll"><table id="adTeachers"></table></div></section>
+      <section><h2>Classes</h2><div class="scroll"><table id="adClasses"></table></div></section>
+      <section><h2>Accuracy by class</h2><canvas id="cAdmin" height="200"></canvas><p class="note" id="adChartNote"></p></section>
+    </div>
+
+    <!-- ============ TEACHER ============ -->
+    <div id="pTeacher" hidden>
+      <section class="no-print">
+        <h2>Your classes</h2>
+        <div class="row">
+          <input id="className" placeholder="New class name (e.g. CSE Sem 3 - DS)">
+          <button id="classCreate" class="accent">Create class</button>
+        </div>
+        <div id="classList"></div>
+      </section>
+      <section id="dash" hidden>
+        <h2 id="dashTitle"></h2>
+        <p class="note">Share the class code with students. They enter it under "My class".</p>
+        <div class="cards" id="dashCards"></div>
+        <div class="row no-print" style="margin-top:10px">
+          <button id="exportClass" class="ghost">Download CSV</button>
+          <button id="printClass" class="ghost">Print / save as PDF</button>
+        </div>
+        <h2 style="margin-top:20px">AI class insights</h2>
+        <p class="note no-print">A plain-English briefing on what to reteach. Only totals are sent to the AI, never student names or emails.</p>
+        <button id="insightBtn" class="accent no-print">Generate insights</button>
+        <div id="insights"></div>
+        <h2 style="margin-top:20px">Weakest topics across the class</h2>
+        <canvas id="cTopics" height="200"></canvas>
+        <p class="note" id="dashTopicsNote"></p>
+        <div class="no-print">
+        <h2 style="margin-top:20px">Assignments</h2>
+        <p class="note">The AI writes a <strong>draft</strong>. Students cannot see it until you review, edit or delete questions, and publish it.</p>
+        <input id="asnTitle" placeholder="Title (e.g. Unit 2 quiz)">
+        <input id="asnTopic" placeholder="Topic (e.g. Stacks and queues)">
+        <div class="row">
+          <select id="asnCount"><option value="5">5 questions</option><option value="10" selected>10 questions</option><option value="15">15 questions</option></select>
+          <select id="asnShort" aria-label="Short-answer questions"><option value="0">No short-answer</option><option value="2">2 short-answer</option><option value="3">3 short-answer</option></select>
+          <select id="asnMin"><option value="5">5 minutes</option><option value="10" selected>10 minutes</option><option value="20">20 minutes</option><option value="30">30 minutes</option></select>
+          <input id="asnDue" type="datetime-local" aria-label="Due date and time">
+        </div>
+        <button id="asnCreate" class="accent">Draft assignment with AI</button>
+        <div id="asnList"></div>
+        <div id="draft" hidden>
+          <h2 id="draftHead" style="margin-top:20px">Review draft</h2>
+          <p class="note">Fix wording, change the correct answer, delete weak questions or add your own. Nothing is visible to students until you publish.</p>
+          <input id="dTitle" placeholder="Title" aria-label="Title">
+          <input id="dTopic" placeholder="Topic" aria-label="Topic">
+          <div class="row"><input id="dMin" type="number" min="3" max="60" aria-label="Minutes"><input id="dDue" type="datetime-local" aria-label="Due date and time"></div>
+          <div id="dQs"></div>
+          <div class="row"><button id="dAddMcq" class="ghost">+ Multiple choice</button><button id="dAddShort" class="ghost">+ Short answer</button></div>
+          <p class="err" id="dErr"></p>
+          <div class="row"><button id="dSave">Save draft</button><button id="dPublish" class="accent">Publish to students</button><button id="dClose" class="ghost">Close</button></div>
+        </div>
+        </div>
+        <div class="scroll"><table id="asnResults"></table></div>
+        <h2 style="margin-top:20px">Students</h2>
+        <div class="scroll"><table id="dashTable"></table></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script>
+function cv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function cv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+let token = localStorage.getItem("token");
+let role = localStorage.getItem("role") || "student";
+let chart, currentPlan, mode = "login";
+const charts = {};
+
+// ---------- API ----------
+async function api(url, method = "GET", body) {
+  const res = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
+    body: body && JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && !url.includes("/login") && !url.includes("/change-password")) { logout(); throw new Error(data.error || "Please log in again."); }
+  if (res.status === 403 && data.mustChange) { showChangePw(true); throw new Error(data.error); }
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+function drawChart(id, config) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart($(id), config);
+}
+const cardsHtml = (arr) => arr.map(([v, l]) => `<div class="card"><b>${esc(v)}</b><span class="note">${esc(l)}</span></div>`).join("");
+
+// ---------- Auth UI ----------
+function setMode(m) {
+  mode = m;
+  $("tabLogin").classList.toggle("on", m === "login");
+  $("tabReg").classList.toggle("on", m === "register");
+  $("aName").hidden = m === "login";
+  $("aRole").hidden = m === "login";
+  $("aCode").hidden = m === "login" || $("aRole").value === "student";
+  $("aGo").textContent = m === "login" ? "Log in" : "Create account";
+  $("aErr").textContent = "";
+}
+$("tabLogin").onclick = () => setMode("login");
+$("tabReg").onclick = () => setMode("register");
+$("aRole").onchange = () => setMode("register");
+
+$("aGo").onclick = async () => {
+  $("aErr").textContent = "";
+  try {
+    const data = await api(mode === "login" ? "/api/login" : "/api/register", "POST", {
+      name: $("aName").value, email: $("aEmail").value, password: $("aPass").value,
+      role: $("aRole").value, inviteCode: $("aCode").value,
+    });
+    token = data.token; role = data.role || "student";
+    localStorage.setItem("token", token);
+    localStorage.setItem("name", data.name);
+    localStorage.setItem("role", role);
+    $("aPass").value = "";
+    if (data.mustChange) { showChangePw(true); return; }
+    await joinPending();
+    showApp();
+  } catch (e) { $("aErr").textContent = e.message; }
+};
+
+function showLanding() {
+  $("landing").hidden = false; $("auth").hidden = true;
+  $("sub").textContent = "Adaptive study platform for students and teachers.";
+}
+function showAuth(m) {
+  $("landing").hidden = true; $("auth").hidden = false; setMode(m);
+  const code = sessionStorage.getItem("pendingCode");
+  $("joinHint").hidden = !code;
+  if (code) { $("joinHint").textContent = `You will join class ${code} when you finish signing up or logging in (students only).`; if (m === "register") { $("aRole").value = "student"; setMode("register"); } }
+  $("aEmail").focus();
+}
+
+// ---- Join-a-class box on the landing page ----
+const CODE_RE = /^[A-HJKMNP-Z2-9]{6}$/;
+$("landCode").oninput = () => { $("landCode").value = $("landCode").value.toUpperCase().replace(/[^A-Z0-9]/g, ""); $("landErr").textContent = ""; };
+$("landJoin").onclick = () => {
+  const code = $("landCode").value.trim().toUpperCase();
+  if (!CODE_RE.test(code)) { $("landErr").textContent = "Class codes have 6 letters and numbers, for example K7PX2M."; return; }
+  sessionStorage.setItem("pendingCode", code);
+  showAuth("register");
+};
+$("landCode").addEventListener("keydown", (e) => { if (e.key === "Enter") $("landJoin").click(); });
+async function joinPending() {
+  const code = sessionStorage.getItem("pendingCode");
+  if (!code) return;
+  sessionStorage.removeItem("pendingCode");
+  if (role !== "student") return;
+  try { await api("/api/classes/join", "POST", { code }); }
+  catch (e) { alert("Your account is ready, but we could not join class " + code + ": " + e.message + " You can try again under My class."); }
+}
+$("heroStart").onclick = $("footStart").onclick = () => showAuth("register");
+$("heroLogin").onclick = () => showAuth("login");
+$("backHome").onclick = showLanding;
+
+function logout() {
+  token = null; plTasks = []; plEditing = null; aiDraft = []; $("aiPreview").hidden = true; $("aiGoal").value = "";
+  clearInterval(examTimer);
+  ["token", "name", "role"].forEach((k) => localStorage.removeItem(k));
+  $("app").hidden = true; $("logoutBtn").hidden = true; $("pwBtn").hidden = true; $("changePw").hidden = true;
+  setMode("login"); showLanding();
+  $("quiz").innerHTML = ""; $("plan").innerHTML = ""; $("chat").innerHTML = "";
+}
+$("logoutBtn").onclick = logout;
+
+// ---------- Navigation ----------
+function buildNav() {
+  const tabs = role === "hod" ? [["admin", "Department"]] : role === "teacher"
+    ? [["teacher", "Teacher dashboard"]]
+    : [["study", "Study"], ["planner", "Planner"], ["exam", "Exam"], ["stats", "Analytics"], ["class", "My class"]];
+  $("nav").innerHTML = "";
+  tabs.forEach(([id, label]) => {
+    const b = document.createElement("button");
+    b.textContent = label; b.dataset.tab = id; b.onclick = () => showTab(id);
+    $("nav").appendChild(b);
+  });
+}
+function showTab(id) {
+  ["study", "planner", "exam", "stats", "class", "teacher", "admin"].forEach((t) => $("p" + t[0].toUpperCase() + t.slice(1)).hidden = t !== id);
+  $("nav").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.tab === id));
+  if (id === "stats") loadAnalytics();
+  if (id === "planner") loadPlanner();
+  if (id === "exam") loadExamHistory();
+  if (id === "class") loadMyClasses();
+  if (id === "teacher") loadTeacherClasses();
+  if (id === "admin") loadAdmin();
+}
+
+async function showApp() {
+  $("landing").hidden = true; $("auth").hidden = true; $("app").hidden = false; $("logoutBtn").hidden = false; $("pwBtn").hidden = false; $("changePw").hidden = true;
+  const name = localStorage.getItem("name") || "there";
+  $("sub").textContent = role === "hod" ? `Welcome, ${name}. Department overview.`
+    : role === "teacher" ? `Welcome, ${name}. Track how your class is doing.`
+    : `Hi ${name}! Quizzes adapt to what you get wrong.`;
+  buildNav();
+  if (role === "hod") { showTab("admin"); return; }
+  if (role === "teacher") { showTab("teacher"); return; }
+  showTab("study");
+  try { renderPlan(await api("/api/plan")); } catch (e) {}
+  loadStats(); loadDue(); loadDocs();
+}
+
+// ---------- Plan ----------
+function renderPlan(plan) {
+  currentPlan = plan;
+  if (!plan) { $("plan").innerHTML = ""; return; }
+  $("plan").innerHTML = plan.days.map((d) =>
+    `<label class="day ${d.done ? "done" : ""}"><input type="checkbox" data-day="${d.day}" ${d.done ? "checked" : ""}><span>Day ${d.day}: ${esc(d.topic)}</span></label>`
+  ).join("");
+  $("plan").querySelectorAll("input").forEach((cb) => cb.onchange = async () => {
+    renderPlan(await api(`/api/plan/${currentPlan._id}/day/${cb.dataset.day}`, "PATCH", { done: cb.checked }));
+  });
+}
+$("planBtn").onclick = async () => {
+  $("planBtn").textContent = "Generating...";
+  try { renderPlan(await api("/api/plan", "POST", { subject: $("subject").value, syllabus: $("syllabus").value })); }
+  catch (e) { alert(e.message); }
+  $("planBtn").textContent = "Generate plan";
+};
+
+// ---------- Quiz (topic, adaptive, review, notes) ----------
+function when(iso) {
+  const mins = Math.max(1, Math.round((new Date(iso) - Date.now()) / 60000));
+  if (mins < 60) return "in " + mins + " min";
+  if (mins < 2880) return "in " + Math.round(mins / 60) + " h";
+  return "in " + Math.round(mins / 1440) + " days";
+}
+
+function renderQuiz(questions, headerHtml) {
+  const root = $("quiz");
+  root.innerHTML = headerHtml || "";
+  if (!questions.length) { root.innerHTML += "<p class='note'>Nothing here yet.</p>"; return; }
+
+  questions.forEach((q, i) => {
+    const box = document.createElement("div"); box.className = "q";
+    const title = document.createElement("strong"); title.textContent = `${i + 1}. ${q.question}`; box.appendChild(title);
+    const opts = q.options.map((o) => {
+      const b = document.createElement("button"); b.className = "opt"; b.textContent = o; box.appendChild(b); return b;
+    });
+    const info = document.createElement("p"); info.className = "note"; info.hidden = true; box.appendChild(info);
+    const why = document.createElement("button"); why.className = "why"; why.textContent = "Why was I wrong?"; why.hidden = true; box.appendChild(why);
+    const ai = document.createElement("div"); ai.className = "ai"; ai.hidden = true; box.appendChild(ai);
+
+    opts.forEach((btn) => btn.onclick = async () => {
+      opts.forEach((b) => { b.disabled = true; if (b.textContent === q.answer) b.classList.add("right"); });
+      const correct = btn.textContent === q.answer;
+      if (!correct) btn.classList.add("wrong");
+      try {
+        const r = await api("/api/answer", "POST", {
+          topic: q.topic, question: q.question, options: q.options,
+          userAnswer: btn.textContent, correctAnswer: q.answer, explanation: q.explanation,
+        });
+        info.textContent = `${q.explanation || ""} • Next review ${when(r.nextReview)} (level ${r.box + 1}/5)`;
+      } catch (e) { info.textContent = e.message; }
+      info.hidden = false;
+
+      if (!correct) {
+        why.hidden = false;
+        why.onclick = async () => {
+          why.disabled = true; why.textContent = "Thinking...";
+          try {
+            const r = await api("/api/explain", "POST", { question: q.question, userAnswer: btn.textContent, correctAnswer: q.answer });
+            ai.innerHTML = `<strong>Likely misconception:</strong> ${esc(r.misconception)}<br><br>${esc(r.explanation)}<br><br><strong>Example:</strong> ${esc(r.example)}`;
+            ai.hidden = false; why.hidden = true;
+          } catch (e) {
+            ai.textContent = e.message; ai.hidden = false;
+            why.disabled = false; why.textContent = "Why was I wrong?";
+          }
+        };
+      }
+      loadStats(); loadDue();
+    });
+    root.appendChild(box);
+  });
+}
+
+async function startQuiz(topic) {
+  $("quiz").innerHTML = "<p class='note'>Generating questions...</p>";
+  try {
+    const data = await api("/api/quiz", "POST", { topic });
+    renderQuiz(data.questions, data.adaptive ? `<p><span class="badge">Adaptive</span> Focusing on: ${esc(data.focus)}</p>` : "");
+  } catch (e) { $("quiz").innerHTML = `<p>${esc(e.message)}</p>`; }
+}
+$("quizBtn").onclick = () => $("topic").value.trim() ? startQuiz($("topic").value.trim()) : alert("Enter a topic first.");
+$("adaptiveBtn").onclick = () => startQuiz("adaptive");
+
+$("reviewBtn").onclick = async () => {
+  try {
+    const cards = await api("/api/review");
+    renderQuiz(cards, cards.length ? `<p><span class="badge">Spaced repetition</span> ${cards.length} card(s) due</p>` : "");
+    if (!cards.length) $("quiz").innerHTML = "<p class='note'>No cards due right now. Come back later!</p>";
+  } catch (e) { $("quiz").innerHTML = `<p>${esc(e.message)}</p>`; }
+};
+
+async function loadDue() {
+  try {
+    const s = await api("/api/cards/summary");
+    $("dueInfo").textContent = `${s.total} cards tracked · ${s.due} due now · ${s.mastered} mastered`;
+    $("reviewBtn").textContent = `Review due cards (${s.due})`;
+  } catch (e) {}
+}
+
+// ---------- Notes / RAG ----------
+function readFile(f, kind) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(kind === "b64" ? String(r.result).split(",")[1] : r.result);
+    r.onerror = () => rej(new Error("Could not read that file."));
+    kind === "b64" ? r.readAsDataURL(f) : r.readAsText(f);
+  });
+}
+
+async function loadDocs(selectId) {
+  try {
+    const docs = await api("/api/rag/docs");
+    const fill = (sel, firstLabel) => {
+      const keep = selectId || sel.value;
+      sel.innerHTML = "";
+      const first = document.createElement("option"); first.value = ""; first.textContent = firstLabel; sel.appendChild(first);
+      docs.forEach((d) => {
+        const o = document.createElement("option"); o.value = d._id; o.textContent = `${d.title} (${d.chunkCount} chunks)`; sel.appendChild(o);
+      });
+      if ([...sel.options].some((o) => o.value === keep)) sel.value = keep;
+    };
+    fill($("docSelect"), "All my notes");
+    fill($("examDoc"), "...or build the exam from one of your notes");
+    $("docDel").hidden = !docs.length;
+  } catch (e) {}
+}
+
+$("docUpload").onclick = async () => {
+  const f = $("docFile").files[0];
+  const text = $("docText").value.trim();
+  if (!f && text.length < 100) return alert("Choose a PDF/TXT file or paste at least a few paragraphs.");
+  if (f && f.size > 8 * 1024 * 1024) return alert("File is too large (max 8 MB).");
+  const title = $("docTitle").value.trim() || (f ? f.name.replace(/\.[^.]+$/, "") : "My notes");
+  const btn = $("docUpload");
+  btn.disabled = true; btn.textContent = "Indexing... (can take a minute)";
+  try {
+    const body = { title };
+    if (f) { if (/\.pdf$/i.test(f.name)) body.pdfBase64 = await readFile(f, "b64"); else body.text = await readFile(f, "text"); }
+    else body.text = text;
+    const d = await api("/api/rag/docs", "POST", body);
+    $("docMsg").textContent = `Saved "${d.title}" as ${d.chunkCount} chunks${d.truncated ? " (long file, only the first part was indexed)" : ""}.`;
+    $("docText").value = ""; $("docTitle").value = ""; $("docFile").value = "";
+    loadDocs(d._id);
+  } catch (e) { alert(e.message); }
+  btn.disabled = false; btn.textContent = "Upload and index notes";
+};
+
+$("docDel").onclick = async () => {
+  const id = $("docSelect").value;
+  if (!id) return alert("Select a specific document to delete.");
+  if (!confirm("Delete this document and its indexed chunks?")) return;
+  try { await api("/api/rag/docs/" + id, "DELETE"); loadDocs(); } catch (e) { alert(e.message); }
+};
+
+function addMsg(cls, text) {
+  const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text;
+  $("chat").appendChild(d); $("chat").scrollTop = $("chat").scrollHeight; return d;
+}
+
+async function ask() {
+  const q = $("askInput").value.trim();
+  if (!q) return;
+  addMsg("you", q); $("askInput").value = "";
+  const box = addMsg("ai", "Searching your notes...");
+  try {
+    const r = await api("/api/rag/ask", "POST", { question: q, docId: $("docSelect").value || null });
+    box.style.whiteSpace = "normal";
+    box.innerHTML = `<div style="white-space:pre-wrap">${esc(r.answer)}</div>` + (r.sources.length
+      ? `<details><summary>Sources (${r.sources.length})</summary>${r.sources.map((s) =>
+          `<p class="note"><strong>[${s.n}] ${esc(s.doc)}</strong>${s.used ? " ✓ used" : ""} · match ${s.score}<br>${esc(s.snippet)}…</p>`).join("")}</details>` : "");
+  } catch (e) { box.textContent = e.message; }
+  $("chat").scrollTop = $("chat").scrollHeight;
+}
+$("askBtn").onclick = ask;
+$("askInput").addEventListener("keydown", (e) => { if (e.key === "Enter") ask(); });
+
+$("notesQuizBtn").onclick = async () => {
+  const id = $("docSelect").value;
+  if (!id) return alert("Select one document first.");
+  $("quiz").innerHTML = "<p class='note'>Writing questions from your notes...</p>";
+  $("quiz").scrollIntoView({ behavior: "smooth", block: "center" });
+  try {
+    const d = await api("/api/rag/quiz", "POST", { docId: id });
+    renderQuiz(d.questions, `<p><span class="badge">From your notes</span> ${esc(d.focus)}</p>`);
+  } catch (e) { $("quiz").innerHTML = `<p>${esc(e.message)}</p>`; }
+};
+
+// ---------- Topic accuracy chart ----------
+async function loadStats() {
+  try {
+    const stats = await api("/api/stats");
+    $("statsEmpty").hidden = stats.length > 0;
+    if (chart) chart.destroy();
+    chart = new Chart($("chart"), {
+      type: "bar",
+      data: {
+        labels: stats.map((s) => s.topic),
+        datasets: [{ label: "Accuracy %", data: stats.map((s) => s.accuracy),
+          backgroundColor: stats.map((s) => s.accuracy < 70 ? cv("--bad") : cv("--accent")) }],
+      },
+      options: { scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } },
+    });
+  } catch (e) {}
+}
+
+// ---------- Exam mode ----------
+let exam = null, examTimer = null, examAnswers = [];
+const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+
+async function loadExamHistory() {
+  try {
+    const list = await api("/api/exam/history");
+    const box = $("examHist");
+    box.innerHTML = list.length ? "" : "<p class='note'>No exams yet.</p>";
+    list.forEach((x) => {
+      const b = document.createElement("button"); b.className = "hist";
+      b.textContent = `${x.topic} — ${x.score}/${x.total} (${x.percent}%) · ${fmtDate(x.submittedAt)}`;
+      b.onclick = async () => { try { showResult(await api(`/api/exam/${x._id}/result`)); } catch (e) { alert(e.message); } };
+      box.appendChild(b);
+    });
+  } catch (e) {}
+}
+
+$("examStart").onclick = async () => {
+  const topic = $("examTopic").value.trim(), docId = $("examDoc").value;
+  if (!topic && !docId) return alert("Enter a topic or pick one of your notes.");
+  const btn = $("examStart");
+  btn.disabled = true; btn.textContent = "Preparing your exam...";
+  try {
+    beginExam(await api("/api/exam/start", "POST", {
+      topic, docId: docId || null, count: +$("examCount").value, minutes: +$("examMin").value, shortCount: +$("examShort").value,
+    }));
+  } catch (e) { alert(e.message); }
+  btn.disabled = false; btn.textContent = "Start exam";
+};
+
+function beginExam(d) {
+  exam = d; exam.submitting = false;
+  examAnswers = new Array(d.questions.length).fill(null);
+  exam.endMs = new Date(d.endsAt).getTime() - (new Date(d.serverNow).getTime() - Date.now()); // adjust for clock difference
+  $("examSetup").hidden = true; $("examResult").hidden = true; $("examRun").hidden = false;
+  $("examTitle").textContent = d.topic;
+
+  const root = $("examQs"); root.innerHTML = "";
+  d.questions.forEach((q, i) => {
+    const box = document.createElement("div"); box.className = "q";
+    const t = document.createElement("strong"); t.textContent = `${i + 1}. ${q.question}`; box.appendChild(t);
+    if (q.kind === "short") {
+      const hint = document.createElement("p"); hint.className = "note"; hint.textContent = "Short answer: explain in your own words (1-3 sentences)."; box.appendChild(hint);
+      const ta = document.createElement("textarea"); ta.maxLength = 1500; ta.setAttribute("aria-label", "Your answer to question " + (i + 1));
+      ta.oninput = () => { examAnswers[i] = ta.value.trim() ? ta.value : null; $("examProg").textContent = `Answered ${examAnswers.filter(Boolean).length} of ${d.questions.length}`; };
+      box.appendChild(ta); root.appendChild(box); return;
+    }
+    const opts = q.options.map((o) => {
+      const b = document.createElement("button"); b.className = "opt"; b.textContent = o; box.appendChild(b); return b;
+    });
+    opts.forEach((b) => b.onclick = () => {
+      examAnswers[i] = b.textContent;
+      opts.forEach((x) => x.classList.toggle("sel", x === b));
+      $("examProg").textContent = `Answered ${examAnswers.filter(Boolean).length} of ${d.questions.length}`;
+    });
+    root.appendChild(box);
+  });
+  $("examProg").textContent = `Answered 0 of ${d.questions.length}`;
+  clearInterval(examTimer);
+  tick(); examTimer = setInterval(tick, 500);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function tick() {
+  const left = Math.max(0, Math.round((exam.endMs - Date.now()) / 1000));
+  $("examClock").textContent = String(Math.floor(left / 60)).padStart(2, "0") + ":" + String(left % 60).padStart(2, "0");
+  $("examClock").classList.toggle("low", left < 60);
+  if (left <= 0) submitExam(true);
+}
+
+async function submitExam(auto) {
+  if (!exam || exam.submitting) return;
+  const missing = examAnswers.filter((a) => !a).length;
+  if (!auto && missing && !confirm(`${missing} question(s) unanswered. Submit anyway?`)) return;
+  exam.submitting = true; clearInterval(examTimer);
+  $("examSubmit").disabled = true; $("examSubmit").textContent = "Grading and writing your report...";
+  try {
+    showResult(await api(`/api/exam/${exam.examId}/submit`, "POST", { answers: examAnswers }));
+  } catch (e) { alert(e.message); exam.submitting = false; }
+  $("examSubmit").disabled = false; $("examSubmit").textContent = "Submit exam";
+}
+$("examSubmit").onclick = () => submitExam(false);
+
+function reviewHtml(q, i) {
+  const label = q.kind === "short" ? (q.mark === 1 ? "Correct" : q.mark === 0.5 ? "Partly correct" : "Wrong") : (q.correct ? "Correct" : "Wrong");
+  const who = q.gradedBy === "ai" ? "Marked by AI" : q.gradedBy === "fallback" ? "Marked by keyword match (AI unavailable)" : "";
+  const answerPart = q.kind === "short"
+    ? `<br>Model answer: <strong>${esc(q.correctAnswer)}</strong>${q.feedback ? `<br><em>${esc(q.feedback)}</em>` : ""}${who ? ` <span class="note">(${who})</span>` : ""}`
+    : (q.correct ? "" : `<br>Correct answer: <strong>${esc(q.correctAnswer)}</strong>`);
+  return `<div class="rev ${q.correct ? "" : "bad"}">
+      <strong>${label}</strong> · <strong>${i + 1}. ${esc(q.question)}</strong><br>
+      Your answer: ${esc(q.yourAnswer || "(skipped)")}${answerPart}
+      <br><span class="note">${esc(q.explanation || "")}</span></div>`;
+}
+
+function showResult(r) {
+  $("examSetup").hidden = true; $("examRun").hidden = true; $("examResult").hidden = false;
+  const list = (title, arr) => arr && arr.length ? `<p><strong>${title}</strong></p><ul>${arr.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
+  const rep = r.report || {};
+  $("examOut").innerHTML = `
+    <h2>${esc(r.topic)}</h2>
+    <div class="score">${r.score}/${r.total} <span style="font-size:1.4rem">(${r.percent}%)</span></div>
+    ${r.timedOut ? "<p class='err'>Submitted after the time limit.</p>" : ""}
+    <h2 style="margin-top:18px">By topic</h2>
+    ${(r.topicBreakdown || []).map((t) => {
+      const p = Math.round((100 * t.correct) / t.total);
+      return `<div>${esc(t.topic)} <span class="note">${t.correct}/${t.total}</span></div><div class="bar"><i style="width:${p}%;background:${p < 60 ? "var(--bad)" : "var(--accent)"}"></i></div>`;
+    }).join("")}
+    <h2 style="margin-top:18px">AI performance report</h2>
+    <p>${esc(rep.summary || "")}</p>
+    ${list("Strengths", rep.strengths)}${list("Needs work", rep.weaknesses)}${list("Revision plan", rep.revision_plan)}
+    <h2 style="margin-top:18px">Review</h2>
+    ${r.review.map((q, i) => reviewHtml(q, i)).join("")}
+    <p class="note">Wrong answers were added to your spaced-repetition cards.</p>`;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+$("examNew").onclick = () => { $("examResult").hidden = true; $("examSetup").hidden = false; loadExamHistory(); loadDue(); loadStats(); };
+
+// ---------- Analytics ----------
+function drawHeat(days, today) {
+  const map = Object.fromEntries(days.map((d) => [d.date, d.count]));
+  const end = new Date(today + "T00:00:00Z");
+  const cells = [];
+  for (let i = 90; i >= 0; i--) {
+    const d = new Date(end); d.setUTCDate(d.getUTCDate() - i);
+    cells.push({ date: d.toISOString().slice(0, 10), dow: d.getUTCDay() });
+  }
+  $("heat").innerHTML = '<div class="cell blank"></div>'.repeat(cells[0].dow) + cells.map((c) => {
+    const n = map[c.date] || 0, lv = n === 0 ? 0 : n < 3 ? 1 : n < 6 ? 2 : n < 10 ? 3 : 4;
+    return `<div class="cell l${lv}" title="${c.date}: ${n} answers"></div>`;
+  }).join("");
+}
+
+async function loadAnalytics() {
+  try {
+    loadProfile();
+    const a = await api("/api/analytics?tz=" + encodeURIComponent(TZ));
+    $("statCards").innerHTML = cardsHtml([
+      [a.streak.current + (a.streak.current === 1 ? " day" : " days"), "Current streak"],
+      [a.streak.longest + (a.streak.longest === 1 ? " day" : " days"), "Longest streak"],
+      [a.totals.answered, "Questions answered"],
+      [a.totals.accuracy + "%", "Overall accuracy"],
+      [a.totals.avgExam === null ? "-" : a.totals.avgExam + "%", "Average exam score"],
+    ]);
+    drawHeat(a.days, a.today);
+
+    const last = a.days.slice(-30);
+    drawChart("cTrend", {
+      type: "line",
+      data: { labels: last.map((d) => d.date.slice(5)), datasets: [{ data: last.map((d) => d.accuracy), borderColor: cv("--accent"), backgroundColor: cv("--accent") + "33", fill: true, tension: .3 }] },
+      options: { scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } },
+    });
+    drawChart("cRet", {
+      type: "bar",
+      data: { labels: a.retention.map((r) => `${r.label} (n=${r.n})`), datasets: [{ data: a.retention.map((r) => r.retention), backgroundColor: cv("--accent") }] },
+      options: { scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } },
+    });
+    $("examEmpty").hidden = a.exams.length > 0;
+    drawChart("cExam", {
+      type: "line",
+      data: { labels: a.exams.map((e) => fmtDate(e.date)), datasets: [{ data: a.exams.map((e) => e.percent), borderColor: cv("--bad"), tension: .2 }] },
+      options: { scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } },
+    });
+  } catch (e) { $("statCards").innerHTML = `<p>${esc(e.message)}</p>`; }
+}
+
+// ---------- Student: join class ----------
+function renderLeaderboard(box, rows) {
+  box.innerHTML = rows.length
+    ? `<div class="scroll"><table><tr><th>#</th><th>Name</th><th>Level</th><th>XP</th></tr>${rows.map((r) =>
+        `<tr class="${r.me ? "me" : ""}"><td>${r.rank}</td><td>${esc(r.name)}${r.me ? " (you)" : ""}</td><td>${r.level}</td><td>${r.xp}</td></tr>`).join("")}</table></div>`
+    : "<p class='note'>No scores yet.</p>";
+}
+
+async function loadMyClasses() {
+  try {
+    const list = await api("/api/classes");
+    const root = $("myClasses");
+    root.innerHTML = list.length ? "<h2 style='margin-top:16px'>Your classes</h2>" : "<p class='note'>You haven't joined a class yet.</p>";
+    list.forEach((c) => {
+      const wrap = document.createElement("div");
+      const row = document.createElement("div"); row.className = "clsrow";
+      row.innerHTML = `<span><strong>${esc(c.name)}</strong><br><span class="note">Teacher: ${esc(c.teacher)}</span></span>`;
+      const btn = document.createElement("button"); btn.className = "ghost"; btn.textContent = "Leaderboard";
+      const lb = document.createElement("div"); lb.hidden = true;
+      btn.onclick = async () => {
+        lb.hidden = !lb.hidden;
+        if (!lb.hidden) { try { renderLeaderboard(lb, await api(`/api/classes/${c._id}/leaderboard`)); } catch (e) { lb.textContent = e.message; } }
+      };
+      row.appendChild(btn); wrap.appendChild(row); wrap.appendChild(lb); root.appendChild(wrap);
+    });
+  } catch (e) {}
+  loadAssignments();
+}
+$("joinBtn").onclick = async () => {
+  $("joinMsg").textContent = "";
+  try { await api("/api/classes/join", "POST", { code: $("joinCode").value }); $("joinCode").value = ""; loadMyClasses(); }
+  catch (e) { $("joinMsg").textContent = e.message; }
+};
+
+// ---------- Teacher dashboard ----------
+async function loadTeacherClasses() {
+  try {
+    const list = await api("/api/classes");
+    $("classList").innerHTML = list.length ? "" : "<p class='note'>Create your first class to get a join code.</p>";
+    list.forEach((c) => {
+      const row = document.createElement("div"); row.className = "clsrow";
+      row.innerHTML = `<span><strong>${esc(c.name)}</strong><br><span class="note">Code: <b>${esc(c.code)}</b> · ${c.studentCount} student(s)</span></span>`;
+      const b = document.createElement("button"); b.textContent = "Open dashboard"; b.onclick = () => openClass(c._id);
+      row.appendChild(b); $("classList").appendChild(row);
+    });
+  } catch (e) { $("classList").textContent = e.message; }
+}
+$("classCreate").onclick = async () => {
+  const name = $("className").value.trim();
+  if (!name) return alert("Enter a class name.");
+  try { await api("/api/classes", "POST", { name }); $("className").value = ""; loadTeacherClasses(); }
+  catch (e) { alert(e.message); }
+};
+
+async function openClass(id) {
+  try {
+    currentClassId = id;
+    const d = await api(`/api/classes/${id}/dashboard`);
+    $("dash").hidden = false;
+    $("dashTitle").textContent = `${d.class.name} · code ${d.class.code}`;
+    $("dashCards").innerHTML = cardsHtml([
+      [d.summary.students, "Students"], [d.summary.avgAccuracy + "%", "Class accuracy"],
+      [d.summary.active7d, "Active this week"], [d.summary.needHelp, "Need help"],
+    ]);
+    $("dashTopicsNote").textContent = d.topics.length ? "" : "Not enough class data yet (a topic needs 3+ answers).";
+    if (charts.cTopics) { charts.cTopics.destroy(); delete charts.cTopics; }
+    if (d.topics.length) drawChart("cTopics", {
+      type: "bar",
+      data: { labels: d.topics.map((t) => t.topic), datasets: [{ data: d.topics.map((t) => t.accuracy), backgroundColor: d.topics.map((t) => t.accuracy < 60 ? cv("--bad") : cv("--accent")) }] },
+      options: { indexAxis: "y", scales: { x: { min: 0, max: 100 } }, plugins: { legend: { display: false } } },
+    });
+    const cls = { "Needs help": "help", "On track": "ok", "Inactive": "idle", "No activity": "none" };
+    $("dashTable").innerHTML = d.students.length
+      ? `<tr><th>Student</th><th>Answers</th><th>Accuracy</th><th>Exams (avg)</th><th>Last active</th><th>Status</th><th></th></tr>` +
+        d.students.map((s) => `<tr><td><strong>${esc(s.name)}</strong><br><span class="note">${esc(s.email)}</span></td>
+          <td>${s.attempts}</td><td>${s.accuracy === null ? "-" : s.accuracy + "%"}</td>
+          <td>${s.exams ? s.exams + " (" + s.avgExam + "%)" : "-"}</td>
+          <td>${s.lastActive ? fmtDate(s.lastActive) : "-"}</td>
+          <td><span class="st ${cls[s.status]}">${esc(s.status)}</span></td>
+          <td><button class="ghost rst" data-id="${esc(s.id)}" data-name="${esc(s.name)}">Reset password</button></td></tr>`).join("")
+      : "<tr><td class='note'>No students have joined yet. Share the class code.</td></tr>";
+    $("dashTable").querySelectorAll(".rst").forEach((b) => b.onclick = async () => {
+      if (!confirm(`Reset the password for ${b.dataset.name}? Their old password will stop working.`)) return;
+      try {
+        const r = await api(`/api/classes/${currentClassId}/students/${b.dataset.id}/reset-password`, "POST");
+        prompt(`Temporary password for ${b.dataset.name}. Copy it now, it will not be shown again. They must choose a new password after logging in.`, r.tempPassword);
+      } catch (e) { alert(e.message); }
+    });
+    $("draft").hidden = true;
+    loadInsights();
+    loadClassAssignments();
+    $("dash").scrollIntoView({ behavior: "smooth" });
+  } catch (e) { alert(e.message); }
+}
+
+// ---------- Change password ----------
+function showChangePw(forced) {
+  $("auth").hidden = true; $("app").hidden = true; $("changePw").hidden = false; $("logoutBtn").hidden = false;
+  $("pwForced").hidden = !forced; $("pwCancel").hidden = forced; $("pwMsg").textContent = "";
+}
+$("pwBtn").onclick = () => showChangePw(false);
+$("pwCancel").onclick = () => { $("changePw").hidden = true; $("app").hidden = false; };
+$("pwSave").onclick = async () => {
+  $("pwMsg").textContent = "";
+  try {
+    const d = await api("/api/change-password", "POST", { currentPassword: $("pwOld").value, newPassword: $("pwNew").value });
+    token = d.token; localStorage.setItem("token", token);
+    $("pwOld").value = ""; $("pwNew").value = "";
+    showApp();
+  } catch (e) { $("pwMsg").textContent = e.message; }
+};
+
+// ---------- Level, XP and badges ----------
+async function loadProfile() {
+  try {
+    const p = await api("/api/profile?tz=" + encodeURIComponent(TZ));
+    $("lvlTitle").textContent = `Level ${p.level} · ${p.xp} XP`;
+    $("lvlBar").style.width = Math.min(100, Math.round((100 * (p.xp - p.levelFloor)) / (p.levelNext - p.levelFloor))) + "%";
+    $("lvlNote").textContent = `${p.levelNext - p.xp} XP to level ${p.level + 1} · ${p.badges.filter((b) => b.earned).length}/${p.badges.length} badges`;
+    $("badges").innerHTML = p.badges.map((b) =>
+      `<div class="badge-card ${b.earned ? "on" : ""}" title="${esc(b.desc)}"><b>${esc(b.name)}</b><span class="note">${esc(b.desc)}</span></div>`).join("");
+  } catch (e) {}
+}
+
+// ---------- Assignments: student ----------
+async function loadAssignments() {
+  try {
+    const list = await api("/api/assignments");
+    const box = $("assignList");
+    box.innerHTML = list.length ? "" : "<p class='note'>No assignments yet.</p>";
+    list.forEach((a) => {
+      const row = document.createElement("div"); row.className = "clsrow";
+      const info = document.createElement("span");
+      info.innerHTML = `<strong>${esc(a.title)}</strong> <span class="note">· ${esc(a.className)}</span><br><span class="note">${esc(a.topic)} · ${a.count} questions · ${a.minutes} min · due ${new Date(a.dueAt).toLocaleString()}</span>`;
+      row.appendChild(info);
+      if (a.status === "done" || a.status === "overdue") {
+        const s = document.createElement("span"); s.className = "st " + (a.status === "done" ? "ok" : "idle");
+        s.textContent = a.status === "done" ? `Done ${a.percent}%` : "Overdue"; row.appendChild(s);
+      } else {
+        const b = document.createElement("button"); b.textContent = a.status === "in progress" ? "Resume" : "Start";
+        b.onclick = () => startAssignment(a._id); row.appendChild(b);
+      }
+      box.appendChild(row);
+    });
+  } catch (e) {}
+}
+async function startAssignment(id) {
+  if (!confirm("Start now? The timer begins immediately and cannot be paused.")) return;
+  try { const d = await api(`/api/assignments/${id}/start`, "POST"); showTab("exam"); beginExam(d); }
+  catch (e) { alert(e.message); loadAssignments(); }
+}
+
+// ---------- Assignments: teacher ----------
+let currentClassId = null;
+async function loadClassAssignments() {
+  const box = $("asnList"); $("asnResults").innerHTML = "";
+  try {
+    const list = await api(`/api/classes/${currentClassId}/assignments`);
+    box.innerHTML = list.length ? "" : "<p class='note'>No assignments yet.</p>";
+    list.forEach((a) => {
+      const isDraft = a.status === "draft";
+      const row = document.createElement("div"); row.className = "clsrow";
+      row.innerHTML = `<span><strong>${esc(a.title)}</strong> ${isDraft ? '<span class="st help">Draft</span>' : ""}<br><span class="note">${esc(a.topic)} · ${a.count} questions · ${a.minutes} min · due ${new Date(a.dueAt).toLocaleString()}${isDraft ? "<br>Not visible to students yet" : `<br>${a.submitted}/${a.total} submitted`}</span></span>`;
+      const actions = document.createElement("span"); actions.style.cssText = "display:flex;gap:6px;flex:none;flex-wrap:wrap";
+      const btn = (label, cls, fn) => { const b = document.createElement("button"); b.textContent = label; if (cls) b.className = cls; b.onclick = fn; actions.appendChild(b); };
+      if (isDraft) btn("Review and edit", "accent", () => openDraft(a._id));
+      else { btn("Results", "", () => showAsnResults(a._id)); btn("CSV", "ghost", () => downloadCsv(`/api/assignments/${a._id}/export.csv`)); }
+      btn("Delete", "ghost", async () => { if (confirm("Delete this assignment?")) { try { await api("/api/assignments/" + a._id, "DELETE"); if (draft && draft.id === a._id) $("draft").hidden = true; loadClassAssignments(); } catch (e) { alert(e.message); } } });
+      row.appendChild(actions); box.appendChild(row);
+    });
+  } catch (e) { box.textContent = e.message; }
+}
+
+// ---- Draft review editor ----
+let draft = null;
+const toLocalInput = (iso) => { const d = new Date(iso); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
+const blankMcq = () => ({ kind: "mcq", topic: "General", question: "", options: ["", "", "", ""], correct: 0, explanation: "" });
+const blankShort = () => ({ kind: "short", topic: "General", question: "", modelAnswer: "", explanation: "" });
+
+async function openDraft(id) {
+  try {
+    const a = await api("/api/assignments/" + id);
+    draft = { id, questions: a.questions.map((q) => q.kind === "short"
+      ? { kind: "short", topic: q.topic, question: q.question, modelAnswer: q.modelAnswer || "", explanation: q.explanation || "" }
+      : { kind: "mcq", topic: q.topic, question: q.question, options: [...q.options], correct: Math.max(0, q.options.indexOf(q.answer)), explanation: q.explanation || "" }) };
+    $("dTitle").value = a.title; $("dTopic").value = a.topic; $("dMin").value = a.minutes; $("dDue").value = toLocalInput(a.dueAt);
+    $("dErr").textContent = ""; $("draft").hidden = false;
+    renderDraft();
+    $("draft").scrollIntoView({ behavior: "smooth" });
+  } catch (e) { alert(e.message); }
+}
+
+function field(parent, tag, value, onInput, attrs = {}) {
+  const el = document.createElement(tag); el.value = value;
+  Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+  el.oninput = () => onInput(el.value); parent.appendChild(el); return el;
+}
+
+function renderDraft() {
+  const root = $("dQs"); root.innerHTML = "";
+  $("draftHead").textContent = `Review draft · ${draft.questions.length} question(s)`;
+  draft.questions.forEach((q, i) => {
+    const box = document.createElement("div"); box.className = "dq";
+    const head = document.createElement("div"); head.className = "row"; head.style.alignItems = "center";
+    const lbl = document.createElement("strong"); lbl.textContent = `${i + 1}. ${q.kind === "short" ? "Short answer" : "Multiple choice"}`; head.appendChild(lbl);
+    const del = document.createElement("button"); del.className = "ghost"; del.textContent = "Delete question"; del.style.flex = "none";
+    del.onclick = () => { draft.questions.splice(i, 1); renderDraft(); }; head.appendChild(del);
+    box.appendChild(head);
+    field(box, "textarea", q.question, (v) => (q.question = v), { placeholder: "Question", "aria-label": "Question " + (i + 1) });
+    if (q.kind === "short") {
+      field(box, "textarea", q.modelAnswer, (v) => (q.modelAnswer = v), { placeholder: "Model answer (what a correct answer should say). AI marks students against this.", "aria-label": "Model answer " + (i + 1) });
+    } else {
+      const note = document.createElement("p"); note.className = "note"; note.textContent = "Select the radio button next to the correct option."; box.appendChild(note);
+      q.options.forEach((o, k) => {
+        const r = document.createElement("div"); r.className = "opt-row";
+        const radio = document.createElement("input"); radio.type = "radio"; radio.name = "correct" + i; radio.checked = q.correct === k;
+        radio.setAttribute("aria-label", "Option " + (k + 1) + " is correct"); radio.onchange = () => (q.correct = k); r.appendChild(radio);
+        const t = field(r, "input", o, (v) => (q.options[k] = v), { type: "text", placeholder: "Option " + (k + 1), "aria-label": "Option " + (k + 1) });
+        box.appendChild(r);
+      });
+      if (q.options.length < 6) { const add = document.createElement("button"); add.className = "ghost"; add.textContent = "+ Option"; add.onclick = () => { q.options.push(""); renderDraft(); }; box.appendChild(add); }
+    }
+    field(box, "input", q.explanation, (v) => (q.explanation = v), { type: "text", placeholder: "Explanation shown after the exam (optional)", "aria-label": "Explanation " + (i + 1), style: "margin-top:8px" });
+    root.appendChild(box);
+  });
+}
+
+function draftPayload() {
+  return {
+    title: $("dTitle").value, topic: $("dTopic").value, minutes: +$("dMin").value || 10, dueAt: new Date($("dDue").value).toISOString(),
+    questions: draft.questions.map((q) => {
+      if (q.kind === "short") return { kind: "short", topic: q.topic, question: q.question, modelAnswer: q.modelAnswer, explanation: q.explanation };
+      const answer = (q.options[q.correct] || "").trim();
+      return { kind: "mcq", topic: q.topic, question: q.question, options: q.options.map((o) => o.trim()).filter(Boolean), answer, explanation: q.explanation };
+    }),
+  };
+}
+
+async function saveDraft() {
+  $("dErr").textContent = "";
+  if (!$("dDue").value) { $("dErr").textContent = "Pick a due date."; return false; }
+  try { await api("/api/assignments/" + draft.id, "PUT", draftPayload()); return true; }
+  catch (e) { $("dErr").textContent = e.message; return false; }
+}
+$("dSave").onclick = async () => { if (await saveDraft()) { $("dErr").textContent = "Saved."; loadClassAssignments(); } };
+$("dPublish").onclick = async () => {
+  if (!confirm("Publish now? Students will see it immediately and you will not be able to edit the questions afterwards.")) return;
+  if (!(await saveDraft())) return;
+  try { await api(`/api/assignments/${draft.id}/publish`, "POST"); $("draft").hidden = true; draft = null; loadClassAssignments(); }
+  catch (e) { $("dErr").textContent = e.message; }
+};
+$("dClose").onclick = () => { $("draft").hidden = true; draft = null; };
+$("dAddMcq").onclick = () => { draft.questions.push(blankMcq()); renderDraft(); };
+$("dAddShort").onclick = () => { draft.questions.push(blankShort()); renderDraft(); };
+
+async function showAsnResults(id) {
+  try {
+    const d = await api(`/api/assignments/${id}/results`);
+    const cls = { "Submitted": "ok", "In progress": "idle", "Overdue": "help", "Not started": "none" };
+    $("asnResults").innerHTML = `<caption style="text-align:left;font-weight:600;padding:8px 0">${esc(d.title)}</caption>
+      <tr><th>Student</th><th>Status</th><th>Score</th><th>Submitted</th></tr>` +
+      d.rows.map((r) => `<tr><td>${esc(r.name)}</td><td><span class="st ${cls[r.status]}">${esc(r.status)}</span></td>
+        <td>${r.percent === null ? "-" : `${esc(r.score)} (${r.percent}%)`}</td><td>${r.submittedAt ? new Date(r.submittedAt).toLocaleString() : "-"}</td></tr>`).join("");
+  } catch (e) { alert(e.message); }
+}
+$("asnCreate").onclick = async () => {
+  const title = $("asnTitle").value.trim(), topic = $("asnTopic").value.trim(), due = $("asnDue").value;
+  if (!title || !topic || !due) return alert("Fill in the title, topic and due date.");
+  const btn = $("asnCreate"); btn.disabled = true; btn.textContent = "Drafting questions...";
+  try {
+    const r = await api(`/api/classes/${currentClassId}/assignments`, "POST", {
+      title, topic, count: +$("asnCount").value, shortCount: +$("asnShort").value, minutes: +$("asnMin").value, dueAt: new Date(due).toISOString(),
+    });
+    $("asnTitle").value = ""; $("asnTopic").value = ""; $("asnDue").value = "";
+    await loadClassAssignments();
+    openDraft(r._id);
+  } catch (e) { alert(e.message); }
+  btn.disabled = false; btn.textContent = "Draft assignment with AI";
+};
+
+// ---------- CSV download + print ----------
+async function downloadCsv(url) {
+  try {
+    const res = await fetch(url, { headers: { Authorization: "Bearer " + token } });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || "Download failed."); }
+    const m = (res.headers.get("Content-Disposition") || "").match(/filename="([^"]+)"/);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(await res.blob()); a.download = m ? m[1] : "export.csv";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+  } catch (e) { alert(e.message); }
+}
+$("exportClass").onclick = () => downloadCsv(`/api/classes/${currentClassId}/export.csv`);
+$("printClass").onclick = () => window.print();
+$("adPrint").onclick = () => window.print();
+$("adCsvT").onclick = () => downloadCsv("/api/admin/export.csv?view=teachers");
+$("adCsvC").onclick = () => downloadCsv("/api/admin/export.csv?view=classes");
+
+// ---------- AI class insights ----------
+function renderInsights(ins, at) {
+  if (!ins) return "<p class='note'>No briefing yet. Click \"Generate insights\".</p>";
+  return `<div class="insight">
+    <strong>${esc(ins.headline)}</strong>
+    ${ins.reteach_first ? `<p><strong>Reteach first:</strong> ${esc(ins.reteach_first)}</p>` : ""}
+    <ul>${(ins.insights || []).map((i) => `<li>${esc(i.finding)}${i.action ? `<br><span class="note">Try: ${esc(i.action)}</span>` : ""}</li>`).join("")}</ul>
+    ${ins.going_well ? `<p>${esc(ins.going_well)}</p>` : ""}
+    <p class="note">Based on ${ins.basedOn ? `${ins.basedOn.students} students, ${ins.basedOn.answers} answers, ${ins.basedOn.submissions} assignment submissions` : "class data"}${at ? " · generated " + new Date(at).toLocaleString() : ""}. AI can be wrong, so check it against what you see in class.</p></div>`;
+}
+async function loadInsights() {
+  $("insights").innerHTML = "";
+  try { const r = await api(`/api/classes/${currentClassId}/insights`); $("insights").innerHTML = renderInsights(r.insights, r.at); $("insightBtn").textContent = r.insights ? "Refresh insights" : "Generate insights"; }
+  catch (e) {}
+}
+$("insightBtn").onclick = async () => {
+  const btn = $("insightBtn"); btn.disabled = true; btn.textContent = "Analysing your class...";
+  try { const r = await api(`/api/classes/${currentClassId}/insights`, "POST"); $("insights").innerHTML = renderInsights(r.insights, r.at); btn.textContent = "Refresh insights"; }
+  catch (e) { $("insights").innerHTML = `<p class="err">${esc(e.message)}</p>`; btn.textContent = "Generate insights"; }
+  btn.disabled = false;
+};
+
+// ---------- Head of department ----------
+const pctText = (v) => (v === null || v === undefined ? "-" : v + "%");
+async function loadAdmin() {
+  try {
+    const d = await api("/api/admin/overview");
+    $("adCards").innerHTML = cardsHtml([
+      [d.totals.teachers, "Teachers"], [d.totals.classes, "Classes"], [d.totals.students, "Students"],
+      [d.totals.answers, "Questions answered"], [pctText(d.totals.accuracy), "Overall accuracy"],
+      [d.totals.active7d, "Active this week"], [d.totals.assignments, "Assignments"], [d.totals.submissions, "Submissions"],
+    ]);
+    $("adTeachers").innerHTML = d.teachers.length
+      ? `<tr><th>Teacher</th><th>Classes</th><th>Students</th><th>Answers</th><th>Accuracy</th><th>Active (7d)</th><th>Assignments</th><th>Avg assignment</th></tr>` +
+        d.teachers.map((t) => `<tr><td><strong>${esc(t.name)}</strong><br><span class="note">${esc(t.email)}</span></td><td>${t.classes}</td><td>${t.students}</td><td>${t.answers}</td><td>${pctText(t.accuracy)}</td><td>${t.active7d}</td><td>${t.assignments}</td><td>${pctText(t.avgAssignmentPercent)}</td></tr>`).join("")
+      : "<tr><td class='note'>No teachers have registered yet.</td></tr>";
+    $("adClasses").innerHTML = d.classes.length
+      ? `<tr><th>Class</th><th>Teacher</th><th>Students</th><th>Accuracy</th><th>Active (7d)</th><th>Assignments</th><th>Submissions</th><th>Avg assignment</th></tr>` +
+        d.classes.map((c) => `<tr><td><strong>${esc(c.name)}</strong></td><td>${esc(c.teacher)}</td><td>${c.students}</td><td>${pctText(c.accuracy)}</td><td>${c.active7d}</td><td>${c.assignments}</td><td>${c.submissions}</td><td>${pctText(c.avgAssignmentPercent)}</td></tr>`).join("")
+      : "<tr><td class='note'>No classes yet.</td></tr>";
+    const withData = d.classes.filter((c) => c.accuracy !== null);
+    $("adChartNote").textContent = withData.length ? "" : "No quiz activity yet.";
+    if (charts.cAdmin) { charts.cAdmin.destroy(); delete charts.cAdmin; }
+    if (withData.length) drawChart("cAdmin", {
+      type: "bar",
+      data: { labels: withData.map((c) => `${c.name} (${c.teacher})`), datasets: [{ data: withData.map((c) => c.accuracy), backgroundColor: withData.map((c) => c.accuracy < 60 ? cv("--bad") : cv("--accent")) }] },
+      options: { indexAxis: "y", scales: { x: { min: 0, max: 100 } }, plugins: { legend: { display: false } } },
+    });
+  } catch (e) { $("adCards").innerHTML = `<p>${esc(e.message)}</p>`; }
+}
+
+// ---------- Role switcher on the landing page (sample data, clearly labelled) ----------
+const bar = (label, pct, bad) => `<div>${label} <span class="note">${pct}%</span></div><div class="bar"><i style="width:${pct}%;${bad ? "background:var(--bad)" : ""}"></i></div>`;
+const ROLE_DEMOS = {
+  student: {
+    title: "Study what you actually get wrong",
+    points: ["AI study plan from your syllabus", "Quizzes that focus on your weak topics", "Spaced-repetition cards come back right when you would forget", "Ask questions about your own notes, with sources", "Timed exams with an AI report"],
+    mock: `<div class="mockhead">Sample student view</div><strong>Level 4 · 612 XP</strong><div class="bar"><i style="width:62%"></i></div>
+      <div class="cards"><div class="card"><b>6 days</b><span class="note">Study streak</span></div><div class="card"><b>5</b><span class="note">Cards due</span></div></div>
+      <p class="note" style="margin-bottom:2px">Accuracy by topic</p>${bar("Stacks", 85)}${bar("Queues", 52, true)}${bar("Trees", 74)}`,
+  },
+  teacher: {
+    title: "Know what to reteach, in one click",
+    points: ["AI class insights in plain English", "AI drafts assignments, you review and publish", "Short answers marked by AI with feedback", "Class dashboard shows who needs help", "Download results as CSV or PDF"],
+    mock: `<div class="mockhead">Sample teacher view</div><div class="insight" style="margin-top:0"><strong>Most of the class is mixing up stacks and queues.</strong>
+      <p><strong>Reteach first:</strong> LIFO versus FIFO ordering.</p><p class="note">Try: trace three push and pop steps together on the board.</p></div>
+      <div class="cards" style="margin-top:10px"><div class="card"><b>24</b><span class="note">Students</span></div><div class="card"><b>71%</b><span class="note">Class accuracy</span></div><div class="card"><b>3</b><span class="note">Need help</span></div></div>`,
+  },
+  hod: {
+    title: "See the whole department at a glance",
+    points: ["Usage across every teacher and class", "Accuracy and weekly activity per class", "Assignments set and submitted", "Export department reports", "Totals only: no individual student data"],
+    mock: `<div class="mockhead">Sample department view</div>
+      <div class="cards"><div class="card"><b>6</b><span class="note">Teachers</span></div><div class="card"><b>14</b><span class="note">Classes</span></div><div class="card"><b>412</b><span class="note">Students</span></div></div>
+      <div class="scroll" style="margin-top:10px"><table><tr><th>Class</th><th>Accuracy</th><th>Active</th></tr><tr><td>CSE 3A</td><td>78%</td><td>31</td></tr><tr><td>CSE 3B</td><td>64%</td><td>27</td></tr><tr><td>ECE 2A</td><td>71%</td><td>29</td></tr></table></div>`,
+  },
+};
+function showRole(key) {
+  const d = ROLE_DEMOS[key];
+  [["student", "rtStudent"], ["teacher", "rtTeacher"], ["hod", "rtHod"]].forEach(([k, id]) => $(id).setAttribute("aria-selected", String(k === key)));
+  $("roleText").innerHTML = `<h3 style="margin:0 0 8px">${d.title}</h3><ul style="margin:0;padding-left:20px">${d.points.map((x) => `<li>${x}</li>`).join("")}</ul>`;
+  $("roleMock").innerHTML = d.mock + `<p class="note" style="margin:10px 0 0">Example numbers, not real students.</p>`;
+}
+$("rtStudent").onclick = () => showRole("student");
+$("rtTeacher").onclick = () => showRole("teacher");
+$("rtHod").onclick = () => showRole("hod");
+showRole("student");
+
+// ---------- Planner: students set their own days ----------
+const pad2 = (n) => String(n).padStart(2, "0");
+const ymd = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const fromYmd = (x) => { const [y, m, d] = x.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (x, n) => { const d = fromYmd(x); d.setDate(d.getDate() + n); return ymd(d); };
+const mondayOf = (x) => addDays(x, -((fromYmd(x).getDay() + 6) % 7));
+const fmtDay = (x, o) => fromYmd(x).toLocaleDateString(undefined, o);
+const fmtMin = (m) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? " " + (m % 60) + " min" : ""}` : `${m} min`);
+let plToday = ymd(new Date()), plSel = plToday, plWeekStart = mondayOf(plToday), plTasks = [], plEditing = null;
+
+async function loadPlanner() {
+  plToday = ymd(new Date());
+  if (!$("aiStart").value) $("aiStart").value = plToday;
+  try {
+    plTasks = await api(`/api/planner?from=${addDays(plWeekStart, -1)}&to=${addDays(plWeekStart, 6)}`);
+    renderPlanner();
+  } catch (e) { $("plDaySum").textContent = e.message; }
+}
+
+function renderPlanner() {
+  const on = (d) => plTasks.filter((t) => t.date === d);
+  $("plRange").textContent = `${fmtDay(plWeekStart, { day: "numeric", month: "short" })} to ${fmtDay(addDays(plWeekStart, 6), { day: "numeric", month: "short" })}`;
+  // week strip
+  const strip = $("plWeek"); strip.innerHTML = "";
+  let weekDone = 0, weekAll = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(plWeekStart, i), list = on(d), done = list.filter((t) => t.done).length;
+    weekAll += list.length; weekDone += done;
+    const b = document.createElement("button");
+    b.className = "wd" + (d === plSel ? " sel" : "") + (d === plToday ? " today" : "");
+    b.setAttribute("aria-label", fmtDay(d, { weekday: "long", day: "numeric", month: "long" }) + `, ${done} of ${list.length} done`);
+    b.innerHTML = `${fmtDay(d, { weekday: "short" })}<b>${fromYmd(d).getDate()}</b><span class="mini"><i style="width:${list.length ? Math.round((100 * done) / list.length) : 0}%"></i></span>`;
+    b.onclick = () => { plSel = d; if (!plEditing) $("plDate").value = d; renderPlanner(); };
+    strip.appendChild(b);
+  }
+  $("plWeekSum").textContent = weekAll ? `This week: ${weekDone} of ${weekAll} tasks done.` : "Nothing planned this week yet.";
+  // selected day
+  const list = on(plSel), done = list.filter((t) => t.done).length, planned = list.reduce((a, t) => a + (t.minutes || 0), 0);
+  $("plDayTitle").textContent = fmtDay(plSel, { weekday: "long", day: "numeric", month: "long" }) + (plSel === plToday ? " (today)" : "");
+  $("plBar").style.width = (list.length ? Math.round((100 * done) / list.length) : 0) + "%";
+  $("plDaySum").textContent = list.length ? `${done} of ${list.length} done${planned ? " · " + fmtMin(planned) + " planned" : ""}` : "No tasks for this day yet. Add one below.";
+  // carry over unfinished tasks from the day before
+  const prev = addDays(plSel, -1), open = plSel >= plToday ? on(prev).filter((t) => !t.done).length : 0;
+  $("plCarry").hidden = !open;
+  if (open) $("plCarry").textContent = `Move ${open} unfinished task${open > 1 ? "s" : ""} from ${fmtDay(prev, { weekday: "long" })} to this day`;
+  // task list (user text is always set with textContent)
+  const box = $("plList"); box.innerHTML = "";
+  list.forEach((t) => {
+    const row = document.createElement("div"); row.className = "task" + (t.done ? " done" : "");
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = t.done; cb.setAttribute("aria-label", "Done: " + t.title);
+    cb.onchange = () => plPatch(t._id, { done: cb.checked }, cb);
+    const main = document.createElement("div"); main.className = "tmain";
+    const title = document.createElement("span"); title.className = "ttitle"; title.textContent = t.title;
+    if (t.source === "ai" || t.source === "plan") { const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = t.source === "ai" ? "AI" : "Study plan"; title.appendChild(tag); }
+    const meta = document.createElement("span"); meta.className = "note";
+    meta.textContent = [t.topic, t.startTime, t.minutes ? fmtMin(t.minutes) : ""].filter(Boolean).join(" · ");
+    main.appendChild(title); if (meta.textContent) main.appendChild(meta);
+    const edit = document.createElement("button"); edit.className = "ghost"; edit.textContent = "Edit"; edit.onclick = () => plStartEdit(t);
+    const del = document.createElement("button"); del.className = "ghost"; del.textContent = "Delete"; del.setAttribute("aria-label", "Delete: " + t.title);
+    del.onclick = async () => { if (!confirm("Delete this task?")) return; try { await api("/api/planner/" + t._id, "DELETE"); if (plEditing && plEditing._id === t._id) plResetForm(); await loadPlanner(); } catch (e) { alert(e.message); } };
+    row.append(cb, main, edit, del); box.appendChild(row);
+  });
+  if (!$("plDate").value) $("plDate").value = plSel;
+}
+
+async function plPatch(id, body, cb) {
+  try { await api("/api/planner/" + id, "PATCH", body); await loadPlanner(); }
+  catch (e) { if (cb) cb.checked = !cb.checked; alert(e.message); }
+}
+
+function plResetForm() {
+  plEditing = null;
+  $("plTitle").value = ""; $("plTopic").value = ""; $("plTime").value = ""; $("plMin").value = ""; $("plDate").value = plSel; $("plErr").textContent = "";
+  $("plFormTitle").textContent = "Add a task"; $("plSave").textContent = "Add task"; $("plCancel").hidden = true;
+}
+function plStartEdit(t) {
+  plEditing = t;
+  $("plTitle").value = t.title; $("plTopic").value = t.topic; $("plDate").value = t.date; $("plTime").value = t.startTime; $("plMin").value = t.minutes && [...$("plMin").options].some((o) => +o.value === t.minutes) ? t.minutes : "";
+  $("plErr").textContent = ""; $("plFormTitle").textContent = "Edit task"; $("plSave").textContent = "Save changes"; $("plCancel").hidden = false;
+  $("plTitle").focus(); $("plTitle").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+$("plSave").onclick = async () => {
+  const body = { date: $("plDate").value, title: $("plTitle").value, topic: $("plTopic").value, startTime: $("plTime").value, minutes: $("plMin").value ? +$("plMin").value : null };
+  if (!body.title.trim()) { $("plErr").textContent = "Write what you will study."; return; }
+  if (!body.date) { $("plErr").textContent = "Pick a day."; return; }
+  $("plErr").textContent = ""; $("plSave").disabled = true;
+  try {
+    if (plEditing) await api("/api/planner/" + plEditing._id, "PATCH", body); else await api("/api/planner", "POST", body);
+    plSel = body.date; plWeekStart = mondayOf(body.date);
+    plResetForm(); await loadPlanner();
+  } catch (e) { $("plErr").textContent = e.message; }
+  $("plSave").disabled = false;
+};
+$("plCancel").onclick = plResetForm;
+$("plTitle").addEventListener("keydown", (e) => { if (e.key === "Enter") $("plSave").click(); });
+$("plPrev").onclick = () => { plWeekStart = addDays(plWeekStart, -7); plSel = plWeekStart; $("plDate").value = plSel; loadPlanner(); };
+$("plNext").onclick = () => { plWeekStart = addDays(plWeekStart, 7); plSel = plWeekStart; $("plDate").value = plSel; loadPlanner(); };
+$("plToday").onclick = () => { plToday = ymd(new Date()); plSel = plToday; plWeekStart = mondayOf(plToday); $("plDate").value = plSel; loadPlanner(); };
+$("plCarry").onclick = async () => {
+  try { const r = await api("/api/planner/carry-over", "POST", { from: addDays(plSel, -1), to: plSel }); $("plDaySum").textContent = `Moved ${r.moved} task${r.moved === 1 ? "" : "s"} to this day.`; await loadPlanner(); }
+  catch (e) { alert(e.message); }
+};
+
+// ---- AI planner: draft, review, keep what you want ----
+let aiDraft = [];
+function renderAiDraft(weak) {
+  const box = $("aiList"); box.innerHTML = "";
+  const days = [...new Set(aiDraft.map((t) => t.date))];
+  days.forEach((d) => {
+    const items = aiDraft.filter((t) => t.date === d);
+    const h = document.createElement("div"); h.className = "aiday";
+    h.textContent = fmtDay(d, { weekday: "long", day: "numeric", month: "short" }) + " · " + fmtMin(items.reduce((a, t) => a + (t.minutes || 0), 0));
+    box.appendChild(h);
+    items.forEach((t) => {
+      const row = document.createElement("label"); row.className = "aitask" + (t.keep ? "" : " off");
+      const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = t.keep;
+      cb.onchange = () => { t.keep = cb.checked; row.classList.toggle("off", !t.keep); updateAiCount(); };
+      const txt = document.createElement("span"); txt.textContent = t.title + (t.topic ? " · " + t.topic : "") + (t.minutes ? " · " + fmtMin(t.minutes) : "");
+      row.append(cb, txt); box.appendChild(row);
+    });
+  });
+  $("aiNote").textContent = (weak && weak.length ? "Extra time given to: " + weak.join(", ") + ". " : "") + "Untick anything you do not want. Nothing is saved until you add it.";
+  $("aiPreview").hidden = false; updateAiCount();
+}
+function updateAiCount() { const n = aiDraft.filter((t) => t.keep).length; $("aiAdd").textContent = n ? `Add ${n} task${n > 1 ? "s" : ""} to my planner` : "Add selected to my planner"; $("aiAdd").disabled = !n; }
+
+$("aiGen").onclick = async () => {
+  $("aiErr").textContent = "";
+  if (!$("aiStart").value) { $("aiErr").textContent = "Pick a start day."; return; }
+  if (!$("aiGoal").value.trim() && !$("aiWeak").checked) { $("aiErr").textContent = "Tell the AI what to cover, or tick the weak topics box."; return; }
+  const body = { goal: $("aiGoal").value, startDate: $("aiStart").value, days: +$("aiDays").value, minutesPerDay: +$("aiMins").value, useWeak: $("aiWeak").checked };
+  if ($("aiExam").value) body.examDate = $("aiExam").value;
+  const btn = $("aiGen"); btn.disabled = true; btn.textContent = "Planning your days...";
+  try { const r = await api("/api/planner/generate", "POST", body); aiDraft = r.tasks.map((t) => ({ ...t, keep: true })); renderAiDraft(r.weakTopics); $("aiPreview").scrollIntoView({ behavior: "smooth", block: "start" }); }
+  catch (e) { $("aiErr").textContent = e.message; }
+  btn.disabled = false; btn.textContent = "Generate plan";
+};
+$("aiAdd").onclick = async () => {
+  const tasks = aiDraft.filter((t) => t.keep).map(({ date, title, topic, minutes }) => ({ date, title, topic, minutes }));
+  if (!tasks.length) return;
+  $("aiAdd").disabled = true;
+  try {
+    const r = await api("/api/planner/bulk", "POST", { tasks });
+    $("aiPreview").hidden = true; aiDraft = [];
+    plSel = tasks[0].date; plWeekStart = mondayOf(plSel); $("plDate").value = plSel;
+    await loadPlanner();
+    $("plDaySum").textContent = `Added ${r.added} task${r.added === 1 ? "" : "s"} from the AI plan${r.skipped ? ` (${r.skipped} skipped: those days are full)` : ""}.`;
+    $("plDayTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) { $("aiErr").textContent = e.message; $("aiAdd").disabled = false; }
+};
+$("aiDiscard").onclick = () => { aiDraft = []; $("aiPreview").hidden = true; };
+$("plImport").onclick = async () => {
+  $("plImportMsg").textContent = "";
+  if (!$("aiStart").value) { $("plImportMsg").textContent = "Pick a start day above first."; return; }
+  try {
+    const r = await api("/api/planner/import-plan", "POST", { startDate: $("aiStart").value });
+    $("plImportMsg").textContent = r.added ? `Added ${r.added} task${r.added === 1 ? "" : "s"} from your 14-day plan.` : "Those plan days are already in your planner.";
+    if (r.added) { plSel = r.firstDay; plWeekStart = mondayOf(plSel); $("plDate").value = plSel; await loadPlanner(); }
+  } catch (e) { $("plImportMsg").textContent = e.message; }
+};
+
+// ---------- Dark mode ----------
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("theme", t); } catch (e) {}
+  $("themeBtn").textContent = t === "dark" ? "Light mode" : "Dark mode";
+  if (window.Chart) {
+    Chart.defaults.color = cv("--ink");
+    Chart.defaults.borderColor = cv("--line");
+    [chart, ...Object.values(charts)].forEach((c) => c && c.update());
+  }
+}
+$("themeBtn").onclick = () => applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+applyTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+
+if (token) showApp(); else showLanding();
+</script>
+</body>
+</html>

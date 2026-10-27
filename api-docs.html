@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Study Buddy API</title>
+<style>
+  :root { --bg:#f6f1e7; --ink:#1c1a17; --card:#fffdf8; --accent:#8f6d1f; --bad:#b4472f; --line:#ddd2bb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; }
+  main { max-width:900px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { margin:0 0 4px; font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; } h2 { margin:28px 0 8px; font-size:1.2rem; }
+  .note { opacity:.75; font-size:.92rem; }
+  details { background:var(--card); border:1px solid var(--line); border-radius:8px; margin:6px 0; }
+  summary { cursor:pointer; padding:10px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .m { display:inline-block; min-width:62px; text-align:center; color:#fff; font-weight:700; font-size:.78rem; padding:2px 8px; border-radius:5px; text-transform:uppercase; }
+  .get { background:#2a9d8f; } .post { background:#3d6fb6; } .put { background:#c98a1b; } .patch { background:#8a63b5; } .delete { background:#e76f51; }
+  code { background:#f1e8d2; padding:1px 5px; border-radius:4px; }
+  .path { font-family:ui-monospace,monospace; font-size:.92rem; }
+  .chip { font-size:.75rem; border:1px solid var(--line); border-radius:99px; padding:0 8px; background:#fff; }
+  .chip.open { border-color:var(--bad); color:var(--bad); }
+  .body { padding:0 14px 12px; }
+  table { border-collapse:collapse; width:100%; font-size:.9rem; margin:6px 0; }
+  th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>AI Study Buddy API</h1>
+  <p class="note" id="intro">Loading...</p>
+  <p class="note">Raw spec: <a href="/openapi.json">/openapi.json</a> (paste it into editor.swagger.io or Postman to try requests).</p>
+  <div id="out"></div>
+</main>
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+fetch("/openapi.json").then((r) => r.json()).then((spec) => {
+  document.getElementById("intro").textContent = `${spec.info.description} Version ${spec.info.version}.`;
+  const byTag = {};
+  for (const [path, ops] of Object.entries(spec.paths))
+    for (const [method, op] of Object.entries(ops)) (byTag[op.tags[0]] = byTag[op.tags[0]] || []).push({ method, path, op });
+  document.getElementById("out").innerHTML = spec.tags.map((t) => `<h2>${esc(t.name)}</h2>` + (byTag[t.name] || []).map(({ method, path, op }) => {
+    const roles = op["x-roles"] || [];
+    const params = (op.parameters || []).map((p) => `<tr><td><code>${esc(p.name)}</code></td><td>${p.in}${p.required ? ", required" : ""}</td><td>${esc(p.description || "")}</td></tr>`).join("");
+    const props = op.requestBody ? op.requestBody.content["application/json"].schema : null;
+    const body = props ? Object.entries(props.properties).map(([k, v]) => `<tr><td><code>${esc(k)}</code></td><td>${esc(v.type || "")}${(props.required || []).includes(k) ? ", required" : ""}</td><td>${esc(v.description || "")}</td></tr>`).join("") : "";
+    const resp = Object.entries(op.responses).map(([c, r]) => `<tr><td><code>${c}</code></td><td colspan="2">${esc(r.description)}</td></tr>`).join("");
+    return `<details><summary><span class="m ${method}">${method}</span><span class="path">${esc(path)}</span><span>${esc(op.summary)}</span>
+      ${op.security.length ? "" : '<span class="chip open">public</span>'}${roles.length && roles.length < 3 ? `<span class="chip">${esc(roles.join(" / "))} only</span>` : ""}</summary>
+      <div class="body">${op.description ? `<p>${esc(op.description)}</p>` : ""}
+      ${params ? `<strong>Parameters</strong><table>${params}</table>` : ""}${body ? `<strong>JSON body</strong><table>${body}</table>` : ""}
+      <strong>Responses</strong><table>${resp}</table></div></details>`;
+  }).join("")).join("");
+}).catch((e) => { document.getElementById("intro").textContent = "Could not load the API description: " + e.message; });
+</script>
+</body>
+</html>
